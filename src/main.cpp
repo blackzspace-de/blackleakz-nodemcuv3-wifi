@@ -1,3 +1,23 @@
+/*
+ (c) by BlackLeakz | 12/29/23
+
+ Name: blackleakz-nodemcuv3-wifi 
+ Version: 0.1
+ Github: https://github.com/blackzspace-de/blackleakz-nodemcuv3-wifi
+ Homepage: https://blackzspace.de/
+ Details: This program is made by learning by doing. 
+ We use an Asynchrone WebServer, LittleFS, Adafruits OLED SSD1306 Display Libarys and other essential WiFi-Modules you need.
+
+
+1x OLED SSD1306 128x64
+1x Breadboard
+*x Some Wires
+2x LED 
+1x resistor
+ 
+*/
+
+
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESPAsyncTCP.h>
@@ -10,6 +30,9 @@
 #include <Adafruit_SSD1306.h>
 
 
+
+
+// Adafruit Settings
 #define SCREEN_WIDTH 128 
 #define SCREEN_HEIGHT 64 
 
@@ -17,16 +40,21 @@
 #define SCREEN_ADDRESS 0x3C
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-
+// WiFi Details
 const char* ssid     = "BLACKLEAKZ-AP";
 const char* password = "123456789";
 
 
+// Starts Asynchrone WebServer
 AsyncWebServer server(80);
 
 
 
 
+
+
+
+// Initialize Messages on Screen
 void oled_start() {
   display.setTextSize(1);
   display.setTextColor(WHITE);
@@ -51,22 +79,31 @@ void oled_start() {
 
 
 
-
+// WebServer's 404 Page
 void notFound(AsyncWebServerRequest *request)
 {
   request->send(404, "text/plain", "Not found");
 }
 
 
+
+
+
+// The Main-Part of this program 
 void setup(){
+
+
+
+  // Starts Serial-Communication || BAUDRATE: 115200
   Serial.begin(115200);
   Serial.println("Console > Blackz NodeMCUv3 ESP8266 App started...");
+
 
   // Declare BUILTIN LED 
   pinMode(LED_BUILTIN, OUTPUT);    
 
   
-  // Starting FileSystem
+  // Mounting FileSystem
   if(!LittleFS.begin()){
     Serial.println("Console > An error has occured while mounting LittleFS");
     return;
@@ -91,12 +128,23 @@ void setup(){
  
 
 
-  
+  // Setting up WiFi softAP with given variables
   Serial.print("Console > Setting AP (Access Point)…");
-  // Remove the password parameter, if you want the AP (Access Point) to be open
-  WiFi.softAP(ssid, password);
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.println("Setting AP");
+  display.display();
+  display.setCursor(0,10);
+  display.println(ssid);
+  display.display();
+  display.setCursor(0,20);
+  display.println(password);
+  display.display();
+  delay(555);
 
-  IPAddress IP = WiFi.softAPIP();
+  WiFi.softAP(ssid, password); // Starts WiFi 
+
+  IPAddress IP = WiFi.softAPIP();  // output variable from function to string
   Serial.print("Console > AP IP address: ");
   Serial.println(IP);
   display.clearDisplay();
@@ -109,7 +157,7 @@ void setup(){
 
   // Print ESP8266 Local IP Address
   Serial.println(WiFi.localIP());
-  display.setCursor(0,30);
+  display.setCursor(0,20);
   display.println(WiFi.localIP());
   display.display();
 
@@ -117,10 +165,21 @@ void setup(){
 
 
 
+
+  // AsyncWebServer's     ||   Route-Handler    || AsyncWebServer's      ||   Route-Handler   
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-            { request->send(LittleFS, "/index.html", "text/html"); });
+  { request->send(LittleFS, "/index.html", "text/html"); });
+
+  server.on("/scan", HTTP_GET, [](AsyncWebServerRequest *request)
+  { request->send(LittleFS, "/wifi_scan.html", "text/html"); });
+
+
 
   server.onNotFound(notFound);
+  // END AsyncWebServer's     ||   Route-Handler    ||  END AsyncWebServer's      ||   Route-Handler 
+
+
+
 
   // Start server
   server.begin();
@@ -137,6 +196,7 @@ void setup(){
 
 
 void loop(){  
+
 
   // LED BLINK LOOP
   digitalWrite(LED_BUILTIN, LOW); 
