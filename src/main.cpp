@@ -29,7 +29,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-
+#include <ESP8266mDNS.h>
 
 
 // Adafruit Settings
@@ -44,12 +44,14 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 const char* ssid     = "BLACKLEAKZ-AP";
 const char* password = "123456789";
 
+// mDNS Credentials
+const char* mDns = "blackleakz"
+
+
+
 
 // Starts Asynchrone WebServer
 AsyncWebServer server(80);
-
-
-
 
 
 
@@ -74,7 +76,85 @@ void oled_start() {
 
 
 
+// Starting WiFi Network scan
+void wifi_NetworkScan() {
+  Serial.println("Console > Starting Network Scan !! :::..::.");
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.println("Console > ");
+  display.display();
+  display.setCursor(2,10);
+  display.println("Scan for: ");
+  display.display();
+  display.setCursor(1,0);
+  display.println("Networkz !!");
+  display.display();
 
+  int n = WiFi.scanNetworks();
+   
+  Serial.println("Console > Scan done");
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.println("Scan done!!!");
+  display.display();
+  display.startscrollright(0x00, 0x00);
+  
+  if (n == 0)
+  Serial.println("Console > No Networks found!!! :(( ");
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.println("No Networks forund");
+  display.display();
+  display.startscrollright(0x00, 0x00);
+  else
+  {
+    Serial.print(n);
+    Serial.println("Console > Networks found");
+    display.clearDisplay();
+    display.setCursor(0,0);
+    display.println("Networks found:");
+    display.display();
+    display.startscrollright(0x00, 0x00);
+    for (int i = 0; i < n; ++i)
+    {
+      // Print SSID and RSSI for each network found
+      Serial.println("Console >>> ");
+      Serial.print(i + 1);  //Sr. No
+      display.clearDisplay();
+      display.setCursor(0,0);
+      display.println(i + 1);
+      display.display();
+      Serial.print(": ");
+      display.setCursor(0,20);
+      display.println(WiFi.SSID(i));
+      display.display();
+      Serial.print(WiFi.SSID(i)); //SSID
+      Serial.print(" (");
+      Serial.print(WiFi.RSSI(i)); //Signal Strength
+      display.setCursor(0,30);
+      display.println(WiFi.RSSI(i));
+      display.setCursor(0,40);
+      display.println("MAC:");
+      display.display();
+      Serial.print(") MAC:");
+      Serial.print(WiFi.BSSIDstr(i));
+      display.setCursor(0,50);
+      display.println(WiFi.BSSIDstr(i));
+      display.display();
+      display.setCursor(0,60);
+      display.println((WiFi.encryptionType(i) == ENC_TYPE_NONE)?" Unsec" : "Sec");
+      display.display();
+      Serial.println((WiFi.encryptionType(i) == ENC_TYPE_NONE)?" Unsecured":" Secured");
+      delay(10);
+    }
+  }
+  Serial.println("");
+
+  // Wait a bit before starting New scanning again
+  delay(5000);
+}
+
+  
 
 
 
@@ -118,10 +198,24 @@ void setup(){
   }
 
 
-
   // Starting Display-Text function
   display.clearDisplay();
   oled_start();
+
+
+
+  // Starting mDNS 
+  if (!MDNS.begin("blackleakz")) {
+    Serial.println("Error setting up MDNS responder!");
+    while (1) {
+      delay(356);
+      }
+    }
+  Serial.println("mDNS responder started");
+
+
+
+
 
 
 
@@ -197,6 +291,8 @@ void setup(){
 
 void loop(){  
 
+  // mDNS update 
+  MDNS.update();
 
   // LED BLINK LOOP
   digitalWrite(LED_BUILTIN, LOW); 
