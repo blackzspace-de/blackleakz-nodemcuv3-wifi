@@ -61,6 +61,12 @@ const char* message = "http://blackzspace.de/projects/blackleakz-nodemcuv3-esp82
 
 
 
+// Values for WiFi-Scanner
+int numberOfNetworks;
+unsigned long lastAusgabe;
+const unsigned long intervall = 5000;
+
+
 // Starts Asynchrone WebServer
 AsyncWebServer server(80);
 
@@ -87,8 +93,10 @@ void oled_start() {
 
 
 
-// Starting WiFi Network scan
-void wifi_NetworkScan() {
+
+
+// Starting WiFi Network scan  
+void wifi_networkscan() {
   Serial.println("Console > Starting Network Scan !! :::..::.");
   display.clearDisplay();
   display.setCursor(0,0);
@@ -166,25 +174,30 @@ void wifi_NetworkScan() {
 }
 
 
-void another_scan() {
-  int n = WiFi.scanComplete();
-        if (n == -2) {
-          WiFi.scanNetworks(true);
-        } else if (n) {
-          for (int i = 0; i < n; ++i) {
-            String router = WiFi.SSID(i);
-            Serial.println(router);
-            network_html += "<input type=\"radio\" id=\"#radiobuttonex\" name=\"ssid\" value=" + router + " required ><label for=\"html\">" + router + "</label><<br>";
 
-          }
-          WiFi.scanDelete();
-          if (WiFi.scanComplete() == -2) {
-            WiFi.scanNetworks(true);
-          }
-        }
 
+void scan_wifi()
+{
+  static unsigned long lastAusgabe;
+  const unsigned long intervall = 5000;
+
+  if ( (numberOfNetworks > 0) && (millis() - lastAusgabe > intervall) )
+  {
+    lastAusgabe = millis();
+    numberOfNetworks--;
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.print("Network-name: ");
+    display.setCursor(0, 10);
+    display.print(WiFi.SSID(numberOfNetworks));
+    display.setCursor(0, 20);
+    display.print("Signal strength: ");
+    display.setCursor(0, 30);
+    display.print(WiFi.RSSI(numberOfNetworks));
+    display.setCursor(0, 40);
+    display.display();
+  }
 }
-
 
 
   
@@ -289,8 +302,8 @@ void setup(){
   display.display();
 
 
-
-
+  // Starts WiFi-Network Scan
+  wifi_networkscan();
 
 
   // AsyncWebServer's     ||   Route-Handler    || AsyncWebServer's      ||   Route-Handler   
@@ -329,6 +342,11 @@ void loop(){
 
   // mDNS update 
   MDNS.update();
+
+
+  // WiFi-Scan Loop
+  scan_wifi();
+
 
   // LED BLINK LOOP
   digitalWrite(LED_BUILTIN, LOW); 
