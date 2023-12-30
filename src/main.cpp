@@ -18,6 +18,7 @@
 */
 
 
+
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESPAsyncTCP.h>
@@ -28,25 +29,35 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-
+#include <AsyncElegantOTA.h>
 #include <ESP8266mDNS.h>
+#include <ArduinoJson.h>
 
 
 // Adafruit Settings
 #define SCREEN_WIDTH 128 
 #define SCREEN_HEIGHT 64 
 
+
 #define OLED_RESET     -1 
 #define SCREEN_ADDRESS 0x3C
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
 
 // WiFi Details
 const char* ssid     = "BLACKLEAKZ-AP";
 const char* password = "123456789";
 
-// mDNS Credentials
-const char* mDns = "blackleakz"
 
+// mDNS Credentials
+#define mDns = "blackleakz"
+
+
+
+// Addr to read/write from 
+const char* host = "http://blackzspace.de/projects/blackleakz-nodemcuv3-esp8266/config.json"; // JSON Config 
+
+const char* message = "http://blackzspace.de/projects/blackleakz-nodemcuv3-esp8266/services/welcome.msg" // Connect Message
 
 
 
@@ -151,8 +162,30 @@ void wifi_NetworkScan() {
   Serial.println("");
 
   // Wait a bit before starting New scanning again
-  delay(5000);
+  delay(1500);
 }
+
+
+void another_scan() {
+  int n = WiFi.scanComplete();
+        if (n == -2) {
+          WiFi.scanNetworks(true);
+        } else if (n) {
+          for (int i = 0; i < n; ++i) {
+            String router = WiFi.SSID(i);
+            Serial.println(router);
+            network_html += "<input type=\"radio\" id=\"#radiobuttonex\" name=\"ssid\" value=" + router + " required ><label for=\"html\">" + router + "</label><<br>";
+
+          }
+          WiFi.scanDelete();
+          if (WiFi.scanComplete() == -2) {
+            WiFi.scanNetworks(true);
+          }
+        }
+
+}
+
+
 
   
 
@@ -274,6 +307,9 @@ void setup(){
 
 
 
+
+  // Start AsyncElegantOTA
+  AsyncElegantOTA.begin(&server);
 
   // Start server
   server.begin();
